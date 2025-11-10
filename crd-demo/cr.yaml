@@ -1,0 +1,10 @@
+---
+apiVersion: demo.example.com/v1
+kind: Apple
+metadata:
+  name: green-apple
+spec:
+  color: green
+  taste: sour
+  quantity: 10
+

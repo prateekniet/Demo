@@ -1,0 +1,41 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web
+  namespace: netpol-demo
+  labels:
+    app: web
+spec:
+  containers:
+  - name: web
+    image: nginx
+    ports:
+    - containerPort: 80
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+  namespace: netpol-demo
+  labels:
+    app: busybox
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: ["sleep", "3600"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox-2
+  namespace: netpol-demo
+  labels:
+    app: busybox2
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: ["sleep", "3600"]
+

@@ -1,0 +1,11 @@
+# pod-no-limits.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-nolimit
+  namespace: resource-demo
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+
