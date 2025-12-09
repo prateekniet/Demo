@@ -360,16 +360,109 @@
 
 
 
+// pipeline {
+//     agent any
+//     environment {
+//         DOCKER_USER = 'bhavyascaler'
+//         IMAGE_TAG = "v${env.BUILD_NUMBER}"
+        
+//         // Path to source code
+//         BASE_DIR = "voting-project/example-voting-app"
+        
+//         // Full path to your K8s YAMLs
+//         K8S_DIR = "voting-project/example-voting-app/k8s-specifications"
+        
+//         GIT_REPO_URL = "github.com/scaler-bhavya/Demo-clone.git"
+//         GIT_BRANCH = "main"
+//     }
+//     stages {
+//         stage('Checkout') {
+//             steps { git branch: "${GIT_BRANCH}", url: "https://${GIT_REPO_URL}" }
+//         }
+//         stage('Build & Push') {
+//             parallel {
+//                 stage('Vote') {
+//                     steps {
+//                         script {
+//                             def image = "${DOCKER_USER}/vote:${IMAGE_TAG}"
+//                             sh "docker build -t ${image} ./${BASE_DIR}/vote"
+//                             withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+//                                 sh "echo $PASS | docker login -u $USER --password-stdin"
+//                                 sh "docker push ${image}"
+//                             }
+//                         }
+//                     }
+//                 }
+//                 stage('Result') {
+//                     steps {
+//                         script {
+//                             def image = "${DOCKER_USER}/result:${IMAGE_TAG}"
+//                             sh "docker build -t ${image} ./${BASE_DIR}/result"
+//                             withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+//                                 // ADDED LOGIN HERE
+//                                 sh "echo $PASS | docker login -u $USER --password-stdin"
+//                                 sh "docker push ${image}"
+//                             }
+//                         }
+//                     }
+//                 }
+//                 stage('Worker') {
+//                     steps {
+//                         script {
+//                             def image = "${DOCKER_USER}/worker:${IMAGE_TAG}"
+//                             sh "docker build -t ${image} ./${BASE_DIR}/worker"
+//                             withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+//                                 // ADDED LOGIN HERE
+//                                 sh "echo $PASS | docker login -u $USER --password-stdin"
+//                                 sh "docker push ${image}"
+//                             }
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//         stage('GitOps Update') {
+//             steps {
+//                 script {
+//                     withCredentials([usernamePassword(credentialsId: 'github-credentials', passwordVariable: 'GIT_PASS', usernameVariable: 'GIT_USER')]) {
+//                         sh """
+//                         git config user.email "jenkins-bot@example.com"
+//                         git config user.name "Jenkins Pipeline"
+
+//                         # Update image tags in YAML files
+//                         sed -i "s|image: ${DOCKER_USER}/vote:.*|image: ${DOCKER_USER}/vote:${IMAGE_TAG}|g" ${K8S_DIR}/*.yaml
+//                         sed -i "s|image: ${DOCKER_USER}/result:.*|image: ${DOCKER_USER}/result:${IMAGE_TAG}|g" ${K8S_DIR}/*.yaml
+//                         sed -i "s|image: ${DOCKER_USER}/worker:.*|image: ${DOCKER_USER}/worker:${IMAGE_TAG}|g" ${K8S_DIR}/*.yaml
+                        
+//                         # Push changes
+//                         if git status | grep -q "modified"; then
+//                           git add ${K8S_DIR}/*.yaml
+//                           git commit -m "CI: Update images to ${IMAGE_TAG}"
+//                           git push https://\${GIT_USER}:\${GIT_PASS}@${GIT_REPO_URL} HEAD:${GIT_BRANCH}
+//                         else
+//                           echo "No changes to commit."
+//                         fi
+//                         """
+//                     }
+//                 }
+//             }
+//         }
+//     }
+// }
+
+
+
 pipeline {
     agent any
     environment {
+        // --- CONFIGURATION ---
         DOCKER_USER = 'bhavyascaler'
         IMAGE_TAG = "v${env.BUILD_NUMBER}"
         
-        // Path to source code
+        // Path to source code (Where the Dockerfiles are)
         BASE_DIR = "voting-project/example-voting-app"
         
-        // Full path to your K8s YAMLs
+        // Full path to your K8s YAMLs (Where the Deployment files are)
         K8S_DIR = "voting-project/example-voting-app/k8s-specifications"
         
         GIT_REPO_URL = "github.com/scaler-bhavya/Demo-clone.git"
@@ -377,11 +470,14 @@ pipeline {
     }
     stages {
         stage('Checkout') {
-            steps { git branch: "${GIT_BRANCH}", url: "https://${GIT_REPO_URL}" }
+            steps { 
+                // Pulls your code from GitHub
+                git branch: "${GIT_BRANCH}", url: "https://${GIT_REPO_URL}" 
+            }
         }
         stage('Build & Push') {
             parallel {
-                stage('Vote') {
+                stage('Vote App') {
                     steps {
                         script {
                             def image = "${DOCKER_USER}/vote:${IMAGE_TAG}"
@@ -393,26 +489,26 @@ pipeline {
                         }
                     }
                 }
-                stage('Result') {
+                stage('Result App') {
                     steps {
                         script {
                             def image = "${DOCKER_USER}/result:${IMAGE_TAG}"
                             sh "docker build -t ${image} ./${BASE_DIR}/result"
                             withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
-                                // ADDED LOGIN HERE
+                                // FIXED: Added Login here
                                 sh "echo $PASS | docker login -u $USER --password-stdin"
                                 sh "docker push ${image}"
                             }
                         }
                     }
                 }
-                stage('Worker') {
+                stage('Worker App') {
                     steps {
                         script {
                             def image = "${DOCKER_USER}/worker:${IMAGE_TAG}"
                             sh "docker build -t ${image} ./${BASE_DIR}/worker"
                             withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
-                                // ADDED LOGIN HERE
+                                // FIXED: Added Login here
                                 sh "echo $PASS | docker login -u $USER --password-stdin"
                                 sh "docker push ${image}"
                             }
@@ -430,17 +526,19 @@ pipeline {
                         git config user.name "Jenkins Pipeline"
 
                         # Update image tags in YAML files
+                        # Note: This looks for 'image: bhavyascaler/vote:...' in your YAMLs
                         sed -i "s|image: ${DOCKER_USER}/vote:.*|image: ${DOCKER_USER}/vote:${IMAGE_TAG}|g" ${K8S_DIR}/*.yaml
                         sed -i "s|image: ${DOCKER_USER}/result:.*|image: ${DOCKER_USER}/result:${IMAGE_TAG}|g" ${K8S_DIR}/*.yaml
                         sed -i "s|image: ${DOCKER_USER}/worker:.*|image: ${DOCKER_USER}/worker:${IMAGE_TAG}|g" ${K8S_DIR}/*.yaml
                         
-                        # Push changes
+                        # Check if anything changed
                         if git status | grep -q "modified"; then
                           git add ${K8S_DIR}/*.yaml
                           git commit -m "CI: Update images to ${IMAGE_TAG}"
+                          # Authenticate and Push
                           git push https://\${GIT_USER}:\${GIT_PASS}@${GIT_REPO_URL} HEAD:${GIT_BRANCH}
                         else
-                          echo "No changes to commit."
+                          echo "No changes needed (or sed didn't find the image tag in YAMLs)"
                         fi
                         """
                     }
