@@ -15,5 +15,5 @@ spec:
         app: worker
     spec:
       containers:
-      - image: bhavyascaler/worker:v1
+      - image: bhavyascaler/worker:v3
         name: worker
